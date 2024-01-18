@@ -25,7 +25,7 @@ public:
 
     bool setQuery(Mat query);
 
-    double getConfidenceRate();
+    const char *getConfidenceRate();
 
     Mat getImageMarker();
 

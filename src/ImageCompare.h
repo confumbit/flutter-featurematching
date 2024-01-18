@@ -1,5 +1,6 @@
 //
 // Created by Junseo Youn on 2023/04/09.
+// Modified by confumbit on 2024/01/06.
 //
 
 #ifndef PIXELMATCHING_IMAGE_COMPARE_H
@@ -18,9 +19,11 @@ private:
     Ptr<Detector> cvDetector;
     Ptr<Matcher> cvMatchers;
     std::vector<KeyPoint> keypointsMarker, keypointsQuery;
+    std::vector<DMatch> selectMatches;
     Mat descriptorsMarker, descriptorsQuery;
     Mat imageQuery, imageQueryAligned, imageMarker, imageMarkerMasked;
     Mat imageMaskMarker, imageMaskQuery;
+    Mat maskPoints;
     Ptr<CLAHE> clahe;
     Mat imageEqualizedMarker, imageEqualizedQuery;
 
@@ -40,7 +43,7 @@ public:
 
     bool setQuery(cv::Mat query);
 
-    double getConfidenceRate();
+    const char *getConfidenceRate();
 
     Mat getImageMarker();
 

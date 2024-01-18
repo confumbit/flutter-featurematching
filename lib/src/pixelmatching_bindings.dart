@@ -57,15 +57,11 @@ class PixelMatchingBindings {
 
   late final _setMarkerPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Bool Function(
-              ffi.Pointer<ffi.Char>,
-              ffi.Pointer<ffi.Uint8>,
-              ffi.Int,
-              ffi.Int,
-              ffi.Int)>>('setMarker');
+          ffi.Bool Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>,
+              ffi.Int, ffi.Int, ffi.Int)>>('setMarker');
   late final _setMarker = _setMarkerPtr.asFunction<
-      bool Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>, int,
-          int, int)>();
+      bool Function(
+          ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>, int, int, int)>();
 
   /// @return set query result
   bool setQuery(
@@ -86,27 +82,23 @@ class PixelMatchingBindings {
 
   late final _setQueryPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Bool Function(
-              ffi.Pointer<ffi.Char>,
-              ffi.Pointer<ffi.Uint8>,
-              ffi.Int,
-              ffi.Int,
-              ffi.Int)>>('setQuery');
+          ffi.Bool Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>,
+              ffi.Int, ffi.Int, ffi.Int)>>('setQuery');
   late final _setQuery = _setQueryPtr.asFunction<
-      bool Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>, int,
-          int, int)>();
+      bool Function(
+          ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Uint8>, int, int, int)>();
 
   /// match marker and query
   /// @return match confidence rate
-  double getQueryConfidenceRate() {
-    return _getQueryConfidenceRate();
+  String getQueryConfidenceRate() {
+    return _getQueryConfidenceRate().toDartString();
   }
 
   late final _getQueryConfidenceRatePtr =
-      _lookup<ffi.NativeFunction<ffi.Double Function()>>(
+      _lookup<ffi.NativeFunction<ffi.Pointer<Utf8> Function()>>(
           'getQueryConfidenceRate');
   late final _getQueryConfidenceRate =
-      _getQueryConfidenceRatePtr.asFunction<double Function()>();
+      _getQueryConfidenceRatePtr.asFunction<ffi.Pointer<Utf8> Function()>();
 
   /// @param size output image size
   /// @return output image bytes(encoded by jpeg)
@@ -122,9 +114,8 @@ class PixelMatchingBindings {
       ffi.NativeFunction<
           ffi.Pointer<ffi.Uint8> Function(
               ffi.Pointer<ffi.Int>)>>('getMarkerQueryDifferenceImage');
-  late final _getMarkerQueryDifferenceImage =
-      _getMarkerQueryDifferenceImagePtr.asFunction<
-          ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<ffi.Int>)>();
+  late final _getMarkerQueryDifferenceImage = _getMarkerQueryDifferenceImagePtr
+      .asFunction<ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<ffi.Int>)>();
 
   void dispose() {
     return _dispose();

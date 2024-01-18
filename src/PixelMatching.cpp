@@ -95,9 +95,9 @@ bool setQuery(const char *imageType, unsigned char *bytes, int width, int height
 }
 
 FUNCTION_ATTRIBUTE
-double getQueryConfidenceRate() {
+const char *getQueryConfidenceRate() {
     if (processor == nullptr) {
-        return -1;
+        return "";
     }
     return processor->getConfidenceRate();
 }

@@ -1,11 +1,13 @@
 //
 // Created by Junseo Youn on 2023/04/09.
+// Modified by confumbit on 2024/01/06.
 //
 
 #include "DebugLogger.h"
 #include "ImageCompare.h"
 
-ImageCompare::ImageCompare() {
+ImageCompare::ImageCompare()
+{
     clahe = createCLAHE();
     matrix = Mat::zeros(3, 3, CV_64F);
     matrix.at<double>(0, 0) = 1;
@@ -13,7 +15,8 @@ ImageCompare::ImageCompare() {
     matrix.at<double>(2, 2) = 1;
 }
 
-ImageCompare::~ImageCompare() {
+ImageCompare::~ImageCompare()
+{
     cvMatchers->clear();
     cvMatchers.release();
     cvMatchers = nullptr;
@@ -36,52 +39,63 @@ ImageCompare::~ImageCompare() {
     imageEqualizedQuery.release();
 }
 
-void ImageCompare::setDetector(const Ptr<Detector> &detector) {
+void ImageCompare::setDetector(const Ptr<Detector> &detector)
+{
     this->cvDetector = detector;
 }
 
-void ImageCompare::setMatchers(const Ptr<Matcher> &matcher) {
+void ImageCompare::setMatchers(const Ptr<Matcher> &matcher)
+{
     this->cvMatchers = matcher;
 }
 
-bool ImageCompare::compare() {
+bool ImageCompare::compare()
+{
     std::vector<std::vector<DMatch>> createMatches;
-    if (descriptorsMarker.empty() || descriptorsQuery.empty()) {
+    if (descriptorsMarker.empty() || descriptorsQuery.empty())
+    {
         logger_e("descriptors is empty");
         logger_e("descriptorsMarker: %d, descriptorsQuery: %d", descriptorsMarker.empty(),
                  descriptorsQuery.empty());
         return false;
     }
-    try {
+    try
+    {
         cvMatchers->knnMatch(descriptorsMarker, descriptorsQuery, createMatches, Constants::knn);
     }
-    catch (const cv::Exception &e) {
+    catch (const cv::Exception &e)
+    {
         logger_e("compare - knnMatch - cv::Exception: %s", e.what());
         return false;
     }
-    catch (const std::exception &e) {
+    catch (const std::exception &e)
+    {
         logger_e("compare - knnMatch - std::exception: %s", e.what());
         return false;
     }
 
     std::vector<DMatch> selectMatches;
     selectMatches.reserve(createMatches.size());
-    for (auto &match: createMatches) {
-        if (match[0].distance < Constants::threshold * match[1].distance) {
+    for (auto &match : createMatches)
+    {
+        if (match[0].distance < Constants::threshold * match[1].distance)
+        {
             selectMatches.emplace_back(match[0].queryIdx, match[0].trainIdx, match[0].distance);
         }
     }
 
-    if (selectMatches.size() <= 4) {
+    if (selectMatches.size() <= 4)
+    {
         createMatches.clear();
         selectMatches.clear();
         return false;
     }
 
-    const size_t numMatches = selectMatches.size();
+    size_t numMatches = selectMatches.size();
     auto *tarPoints = new cv::Point2f[numMatches];
     auto *qryPoints = new cv::Point2f[numMatches];
-    for (size_t i = 0; i < numMatches; ++i) {
+    for (size_t i = 0; i < numMatches; ++i)
+    {
         const auto &match = selectMatches[i];
         tarPoints[i] = keypointsMarker[match.queryIdx].pt;
         qryPoints[i] = keypointsQuery[match.trainIdx].pt;
@@ -92,11 +106,13 @@ bool ImageCompare::compare() {
 
     delete[] tarPoints;
     delete[] qryPoints;
+    cv::Mat maskPoints;
     // 원근 변환 행렬 계산
-    Mat H = findHomography(mappedPointsMarker, mappedPointsQuery, RANSAC, 1.0, noArray());
+    Mat H = findHomography(mappedPointsMarker, mappedPointsQuery, RANSAC, 1.0, maskPoints);
 
     // 원근 변환 실패시 실패 처리
-    if (H.data == nullptr) {
+    if (H.data == nullptr)
+    {
         createMatches.clear();
         selectMatches.clear();
         H.release();
@@ -113,16 +129,19 @@ bool ImageCompare::compare() {
     imageQueryAligned.release();
     warpPerspective(imageQuery, imageQueryAligned, M, imageQuery.size());
 
-    // 마스크 생성
+    // Create Mask
     imageMaskQuery.release();
     imageMaskQuery = Mat::ones(imageQuery.size(), CV_8U);
 
-    // 비교 대상 이미지에 대응되지 않는 부분은 제거하기 위한 마스크 생성
+    // Create a mask to remove parts that do not correspond to the image being compared
     imageMarkerMasked.release();
     imageMarkerMasked = imageMarker.clone();
-    for (int row = 0; row < imageQueryAligned.rows; row++) {
-        for (int column = 0; column < imageQueryAligned.cols; column++) {
-            if (imageQueryAligned.at<uint8_t>(row, column) == 0) {
+    for (int row = 0; row < imageQueryAligned.rows; row++)
+    {
+        for (int column = 0; column < imageQueryAligned.cols; column++)
+        {
+            if (imageQueryAligned.at<uint8_t>(row, column) == 0)
+            {
                 imageMarkerMasked.at<uint8_t>(row, column) = 0;
                 imageMaskQuery.at<uint8_t>(row, column) = 0;
             }
@@ -139,10 +158,12 @@ bool ImageCompare::compare() {
     return true;
 }
 
-bool ImageCompare::setMarker(cv::Mat marker) {
+bool ImageCompare::setMarker(cv::Mat marker)
+{
     imageMarker.release();
     imageMarker = marker.clone();
-    if (imageMarker.empty()) {
+    if (imageMarker.empty())
+    {
         logger_e("[ImageCompare] marker image is empty");
         return false;
     }
@@ -152,20 +173,24 @@ bool ImageCompare::setMarker(cv::Mat marker) {
     cvMatchers->add(descriptorsMarker);
     marker.release();
     // description markers is empty
-    if (descriptorsMarker.empty()) {
+    if (descriptorsMarker.empty())
+    {
         logger_e("[ImageCompare] marker descriptions is empty");
         return false;
     }
-    if (descriptorsMarker.rows < Constants::knn) {
+    if (descriptorsMarker.rows < Constants::knn)
+    {
         return false;
     }
     return true;
 }
 
-bool ImageCompare::setQuery(cv::Mat query) {
+bool ImageCompare::setQuery(cv::Mat query)
+{
     imageQuery.release();
     imageQuery = query.clone();
-    if (imageQuery.empty()) {
+    if (imageQuery.empty())
+    {
         return false;
     }
     keypointsQuery.clear();
@@ -175,18 +200,23 @@ bool ImageCompare::setQuery(cv::Mat query) {
     cvMatchers->add(descriptorsMarker);
     cvMatchers->add(descriptorsQuery);
     query.release();
-    if (descriptorsQuery.empty()) {
+    if (descriptorsQuery.empty())
+    {
         return false;
     }
-    if (descriptorsQuery.rows < Constants::knn) {
+    if (descriptorsQuery.rows < Constants::knn)
+    {
         return false;
     }
     return compare();
 }
 
-double ImageCompare::getConfidenceRate() {
-    if (imageMarkerMasked.empty() || imageQueryAligned.empty()) {
-        return -1.0;
+// The function has been modified to return the coordinates of matched features on the images
+const char *ImageCompare::getConfidenceRate()
+{
+    if (imageMarkerMasked.empty() || imageQueryAligned.empty())
+    {
+        return "";
     }
     Mat res;
     clahe->apply(imageMarker, imageEqualizedMarker);
@@ -194,13 +224,57 @@ double ImageCompare::getConfidenceRate() {
     matchTemplate(imageEqualizedMarker, imageEqualizedQuery, res,
                   TemplateMatchModes::TM_CCORR_NORMED,
                   imageMaskQuery);
-    return res.at<float>(0, 0);
+
+    std::stringstream ss;
+    const size_t numMatches = selectMatches.size();
+    auto *tarPoints = new cv::Point2f[numMatches];
+    auto *qryPoints = new cv::Point2f[numMatches];
+    int count = 0;
+    for (size_t i = 0; i < numMatches; ++i)
+    {
+        const auto &match = selectMatches[i];
+        tarPoints[i] = keypointsMarker[match.queryIdx].pt;
+        qryPoints[i] = keypointsQuery[match.trainIdx].pt;
+        char tarX;
+        char tarY;
+        char qryX;
+        char qryY;
+        ss << tarPoints[i].x << ":" << tarPoints[i].y << ";" << qryPoints[i].x << ":" << qryPoints[i].y << ";/";
+        count++;
+    }
+
+    logger_i("The number of matches: %s", numCString);
+
+    std::stringstream rs;
+    rs << tarPoints[0].y << ":" << tarPoints[0].x << ";" << qryPoints[0].y << ":" << qryPoints[0].x << ";/"
+       << tarPoints[1].y << ":" << tarPoints[1].x << ";" << qryPoints[1].y << ":" << qryPoints[1].x << ";/"
+       << tarPoints[2].y << ":" << tarPoints[2].x << ";" << qryPoints[2].y << ":" << qryPoints[2].x << ";/"
+       << tarPoints[3].y << ":" << tarPoints[3].x << ";" << qryPoints[3].y << ":" << qryPoints[3].x << ";/";
+    std::string rString = rs.str();
+    const char *cPointsString = rString.c_str();
+
+    // std::string sPointsString = ss.str();
+    // char *cPointsString = new char[sPointsString.length()];
+    // strcpy(cPointsString, sPointsString.c_str());
+    // cPointsString = (char *)malloc(sizeof sPointsString);
+
+    logger_i("these are the feature coords: %s", cPointsString);
+
+    delete[] tarPoints;
+    delete[] qryPoints;
+
+    // std::stringstream confRate;
+    // confRate << res.at<float>(0, 0);
+
+    return cPointsString;
 }
 
-Mat ImageCompare::getImageMarker() {
+Mat ImageCompare::getImageMarker()
+{
     return imageMarker;
 }
 
-Mat ImageCompare::getImageQuery() {
+Mat ImageCompare::getImageQuery()
+{
     return imageQuery;
 }

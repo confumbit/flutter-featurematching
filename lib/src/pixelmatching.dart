@@ -149,7 +149,7 @@ class PixelMatching {
     return res.future;
   }
 
-  Future<double> similarity(dynamic query) async {
+  Future<String> similarity(dynamic query) async {
     assert(query != null, 'image is null');
     assert(query is CameraImage || query is imglib.Image || query is Uint8List,
         'image is not CameraImage or Image or Uint8List');
@@ -187,7 +187,7 @@ class PixelMatching {
     }
 
     final id = ++_id;
-    var res = Completer<double>();
+    var res = Completer<String>();
     _completers[id] = res;
     _clientSender?.send(
       client.Request(
@@ -209,14 +209,14 @@ class PixelMatching {
   Using the [PixelMatching.similarity] method
   Same functionality, but with different parameter values
   """)
-  Future<double> setQuery(
+  Future<String> setQuery(
       String imageType, Uint8List image, int width, int height,
       {int rotation = 0}) async {
     if (!_clientReady) {
       await _clientInitCompleter?.future;
     }
     final id = ++_id;
-    var res = Completer<double>();
+    var res = Completer<String>();
     _completers[id] = res;
     _clientSender?.send(
       client.Request(

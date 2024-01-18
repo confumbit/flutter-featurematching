@@ -32,7 +32,7 @@ bool setQuery(const char *imageType, unsigned char *image, int width, int height
  * match marker and query
  * @return match confidence rate
 */
-double getQueryConfidenceRate();
+const char *getQueryConfidenceRate();
 
 /**
  * @param size output image size

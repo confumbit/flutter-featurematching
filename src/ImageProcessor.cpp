@@ -59,7 +59,7 @@ bool ImageProcessor::setQuery(Mat query) {
     return false;
 }
 
-double ImageProcessor::getConfidenceRate() {
+const char *ImageProcessor::getConfidenceRate() {
     return compare.getConfidenceRate();
 }
 

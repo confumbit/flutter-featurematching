@@ -141,7 +141,7 @@ class _PixelMatchingClient {
     return res;
   }
 
-  double query(String imageType, Uint8List bytes, int w, int h,
+  String query(String imageType, Uint8List bytes, int w, int h,
       {int rotation = 0}) {
     if (_imageBuffer != null && _imageBufferSize != bytes.length) {
       malloc.free(_imageBuffer!);
@@ -165,7 +165,7 @@ class _PixelMatchingClient {
     if (res) {
       return _confidence();
     } else {
-      return 0.0;
+      return "";
     }
   }
 
@@ -202,8 +202,8 @@ class _PixelMatchingClient {
     }
   }
 
-  // 0.87 정도 나오면 일치하는 것으로 판단해도 됨
-  double _confidence() {
+  // if it comes out to a 0.87, it can be judged as a matching
+  String _confidence() {
     return _native.getQueryConfidenceRate();
   }
 
