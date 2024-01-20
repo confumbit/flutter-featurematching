@@ -104,11 +104,21 @@ bool ImageCompare::compare()
     std::vector<cv::Point2f> mappedPointsMarker(tarPoints, tarPoints + numMatches);
     std::vector<cv::Point2f> mappedPointsQuery(qryPoints, qryPoints + numMatches);
 
+    cv::Mat mask;
+    // 원근 변환 행렬 계산
+    Mat H = findHomography(mappedPointsMarker, mappedPointsQuery, RANSAC, 1.0, mask);
+
+    streamSelectMatches.str("");
+    for (size_t i = 0; i < numMatches; ++i)
+    {
+        if ((unsigned int)mask.at<uchar>(i))
+        {
+            streamSelectMatches << qryPoints[i].x << "," << qryPoints[i].y << ":" << tarPoints[i].x << "," << tarPoints[i].y << ";";
+        }
+    }
+
     delete[] tarPoints;
     delete[] qryPoints;
-    cv::Mat maskPoints;
-    // 원근 변환 행렬 계산
-    Mat H = findHomography(mappedPointsMarker, mappedPointsQuery, RANSAC, 1.0, maskPoints);
 
     // 원근 변환 실패시 실패 처리
     if (H.data == nullptr)
@@ -211,62 +221,21 @@ bool ImageCompare::setQuery(cv::Mat query)
     return compare();
 }
 
-// The function has been modified to return the coordinates of matched features on the images
+// This function has been modified to return a string containing coordinates of matched features,
+// the string is in the format <queryImage_x_coord>,<queryImage_y_coord>:<targetImage_x_coord>,<targetImage_y_coord>;...
 const char *ImageCompare::getConfidenceRate()
 {
     if (imageMarkerMasked.empty() || imageQueryAligned.empty())
     {
-        return "";
-    }
-    Mat res;
-    clahe->apply(imageMarker, imageEqualizedMarker);
-    clahe->apply(imageQueryAligned, imageEqualizedQuery);
-    matchTemplate(imageEqualizedMarker, imageEqualizedQuery, res,
-                  TemplateMatchModes::TM_CCORR_NORMED,
-                  imageMaskQuery);
-
-    std::stringstream ss;
-    const size_t numMatches = selectMatches.size();
-    auto *tarPoints = new cv::Point2f[numMatches];
-    auto *qryPoints = new cv::Point2f[numMatches];
-    int count = 0;
-    for (size_t i = 0; i < numMatches; ++i)
-    {
-        const auto &match = selectMatches[i];
-        tarPoints[i] = keypointsMarker[match.queryIdx].pt;
-        qryPoints[i] = keypointsQuery[match.trainIdx].pt;
-        char tarX;
-        char tarY;
-        char qryX;
-        char qryY;
-        ss << tarPoints[i].x << ":" << tarPoints[i].y << ";" << qryPoints[i].x << ":" << qryPoints[i].y << ";/";
-        count++;
+        return "-1";
     }
 
-    logger_i("The number of matches: %s", numCString);
+    streamSelectMatches << "";
+    std::string stringSelectMatches = streamSelectMatches.str();
+    char *cStringSelectMatches = new char[stringSelectMatches.length()];
+    strcpy(cStringSelectMatches, stringSelectMatches.c_str());
 
-    std::stringstream rs;
-    rs << tarPoints[0].y << ":" << tarPoints[0].x << ";" << qryPoints[0].y << ":" << qryPoints[0].x << ";/"
-       << tarPoints[1].y << ":" << tarPoints[1].x << ";" << qryPoints[1].y << ":" << qryPoints[1].x << ";/"
-       << tarPoints[2].y << ":" << tarPoints[2].x << ";" << qryPoints[2].y << ":" << qryPoints[2].x << ";/"
-       << tarPoints[3].y << ":" << tarPoints[3].x << ";" << qryPoints[3].y << ":" << qryPoints[3].x << ";/";
-    std::string rString = rs.str();
-    const char *cPointsString = rString.c_str();
-
-    // std::string sPointsString = ss.str();
-    // char *cPointsString = new char[sPointsString.length()];
-    // strcpy(cPointsString, sPointsString.c_str());
-    // cPointsString = (char *)malloc(sizeof sPointsString);
-
-    logger_i("these are the feature coords: %s", cPointsString);
-
-    delete[] tarPoints;
-    delete[] qryPoints;
-
-    // std::stringstream confRate;
-    // confRate << res.at<float>(0, 0);
-
-    return cPointsString;
+    return cStringSelectMatches;
 }
 
 Mat ImageCompare::getImageMarker()
