@@ -6,6 +6,8 @@
 #include "DebugLogger.h"
 #include "ImageCompare.h"
 
+std::stringstream streamSelectMatches;
+
 ImageCompare::ImageCompare()
 {
     clahe = createCLAHE();
@@ -230,7 +232,21 @@ const char *ImageCompare::getConfidenceRate()
         return "-1";
     }
 
+    // calculating similarity value (0 to 1)
+    Mat res;
+    clahe->apply(imageMarker, imageEqualizedMarker);
+    clahe->apply(imageQueryAligned, imageEqualizedQuery);
+    matchTemplate(imageEqualizedMarker, imageEqualizedQuery, res,
+                  TemplateMatchModes::TM_CCORR_NORMED,
+                  imageMaskQuery);
+    float similarity = res.at<float>(0, 0);
+    similarity = round(similarity * 1000) / 1000;
+
     streamSelectMatches << "";
+    const std::string &temp = streamSelectMatches.str();
+    streamSelectMatches.seekp(0);
+    streamSelectMatches << similarity << "+";
+    streamSelectMatches << temp;
     std::string stringSelectMatches = streamSelectMatches.str();
     char *cStringSelectMatches = new char[stringSelectMatches.length()];
     strcpy(cStringSelectMatches, stringSelectMatches.c_str());
